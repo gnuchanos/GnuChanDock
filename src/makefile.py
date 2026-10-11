@@ -36,7 +36,11 @@ CONFIG_SOURCE = ROOT / "GnuChanDock_config" / "GnuChanDock.py"
 CONFIG_DIR_NAME = "GnuChanDock"
 CONFIG_FILE_NAME = "GnuChanDock.py"
 
-LOGO_SOURCE = REPO_ROOT / "assets" / "logo.png"
+# Both pictures are this repository's own (assets/ beside this file), so a
+# standalone checkout builds and installs without anything outside it. logo.png
+# is the GnuchanOS logo and settings.png the gear the dock's menu shows; the
+# GnuchanOS repository carries the same logo for the themes and the ISO build.
+LOGO_SOURCE = ROOT.parent / "assets" / "logo.png"
 SETTINGS_ICON_SOURCE = ROOT / "assets" / "settings.png"
 
 SOURCES = (
