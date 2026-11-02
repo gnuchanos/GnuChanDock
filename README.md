@@ -18,8 +18,11 @@ bar and activation strip when the display mode changes.
 The makefile installs the build dependencies with apt-get, compiles the sources,
 and re-runs itself through sudo to write into `/usr/local/bin`. The binary goes
 to `/usr/local/bin/GnuChanDock`; a desktop entry is written to
-`/usr/share/applications/gnuchandock.desktop`; the settings script, `logo.png`
-and `settings.png` go under `~/.config/GnuChanDock/`.
+`/usr/share/applications/gnuchandock.desktop`; `GnuChanDock.conf`, `logo.png`
+and `settings.png` go under `~/.config/GnuChanDock/`. The settings file uses
+plain `Key = value` lines, like GnuChanSettings' `system.conf`. Existing
+`GnuChanDock.py` settings are read by a restricted static parser when no `.conf`
+exists; they are never executed.
 The running dock watches that settings directory, so changes saved through
 GnuChanSettings update its size, icons and colors without restarting it.
 

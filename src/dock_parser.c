@@ -1,9 +1,9 @@
 /*
- * dock_parser.c — a small reader for the settings script.
+ * dock_parser.c — a small reader for settings files.
  *
- * This is not a Python interpreter and must not become one. It understands the
- * two statement shapes a settings file uses — a name given a value, and a call
- * that passes named arguments — and the handful of value kinds those contain.
+ * It understands plain name/value assignments and the former static call
+ * syntax, plus the handful of value kinds those contain. Nothing is evaluated
+ * or executed.
  * It produces a flat list of statements; dock_config.c is what gives them
  * meaning. The split is deliberate: only dock_config.c needs to know that
  * "gcl_Dock.Main" is the one call, and this file needs to know none of it.

@@ -1,14 +1,11 @@
 /*
  * dock_config.h — the settings GnuChanDock is built from.
  *
- * GnuChanDock is configured by a script, not by a file of key = value pairs,
- * the same way GnuChanWM, GnuChanSS, GnuChanTerm and GnuChanFetch are: the
- * same file a person would write to recolour the dock, resize its icons, or
- * point it at a different terminal. That script is Python, and this header is
- * the shape of what running it produces — the small, fixed set of things a
- * dock can be asked for.
+ * GnuChanDock is configured by a plain Key = value file. Older static call
+ * syntax is parsed without execution for compatibility. This header is the
+ * small, fixed set of values a dock can be asked for.
  *
- * Everything here is plain data. The script is read by dock_parser.c, walked
+ * Everything here is plain data. The file is read by dock_parser.c, walked
  * by dock_config.c, and drawn by dock_draw.c. Nothing in this header knows
  * about X.
  */
@@ -119,8 +116,8 @@ int dock_config_load(DockConfig *config, const char *path);
    file. Always leaves a usable config. Returns 0 when a file was read. */
 int dock_config_load_default(DockConfig *config);
 
-/* Where the script is looked for: $XDG_CONFIG_HOME/GnuChanDock/GnuChanDock.py,
-   or ~/.config/GnuChanDock/GnuChanDock.py. Written into buffer, returned. */
+/* Where settings are looked for: $XDG_CONFIG_HOME/GnuChanDock/GnuChanDock.conf,
+   or ~/.config/GnuChanDock/GnuChanDock.conf. */
 char *dock_config_path(char *buffer, unsigned int size);
 
 /* A written colour resolved to a pixel on this display. `display_pointer` is a

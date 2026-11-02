@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <X11/Xlib.h>
 
@@ -151,12 +152,12 @@ static void read_main(DockConfig *config, const DockStatement *statement) {
 char *dock_config_path(char *buffer, unsigned int size) {
     const char *xdg = getenv("XDG_CONFIG_HOME");
     if (xdg && xdg[0]) {
-        snprintf(buffer, size, "%s/GnuChanDock/GnuChanDock.py", xdg);
+        snprintf(buffer, size, "%s/GnuChanDock/GnuChanDock.conf", xdg);
         return buffer;
     }
     const char *home = getenv("HOME");
     if (home && home[0]) {
-        snprintf(buffer, size, "%s/.config/GnuChanDock/GnuChanDock.py", home);
+        snprintf(buffer, size, "%s/.config/GnuChanDock/GnuChanDock.conf", home);
         return buffer;
     }
     buffer[0] = '\0';
@@ -184,6 +185,14 @@ int dock_config_load(DockConfig *config, const char *path) {
         if (statements[i].kind == DOCK_STMT_CALL &&
             strcmp(statements[i].target, "gcl_Dock.Main") == 0) {
             read_main(config, &statements[i]);
+        } else if (statements[i].kind == DOCK_STMT_ASSIGN) {
+            DockStatement flat = {0};
+            flat.kind = DOCK_STMT_CALL;
+            flat.arg_count = 1;
+            snprintf(flat.args[0].name, sizeof(flat.args[0].name), "%s",
+                     statements[i].target);
+            flat.args[0].value = statements[i].value;
+            read_main(config, &flat);
         }
     }
     dock_parse_free(statements, count);
@@ -196,6 +205,17 @@ int dock_config_load_default(DockConfig *config) {
     if (!path[0]) {
         dock_config_defaults(config);
         return -1;
+    }
+    if (access(path, R_OK) != 0) {
+        char legacy[DOCK_TEXT_LENGTH];
+        snprintf(legacy, sizeof(legacy), "%s", path);
+        char *suffix = strrchr(legacy, '.');
+        if (suffix && strcmp(suffix, ".conf") == 0) {
+            strcpy(suffix, ".py");
+            if (access(legacy, R_OK) == 0) {
+                snprintf(path, sizeof(path), "%s", legacy);
+            }
+        }
     }
     if (dock_config_load(config, path) != 0) {
         return -1;

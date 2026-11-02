@@ -32,9 +32,9 @@ BIN_DIR = Path("/usr/local/bin")
 APPS_DIR = Path("/usr/share/applications")
 DESKTOP_FILE = APPS_DIR / "gnuchandock.desktop"
 
-CONFIG_SOURCE = ROOT / "GnuChanDock_config" / "GnuChanDock.py"
+CONFIG_SOURCE = ROOT / "GnuChanDock_config" / "GnuChanDock.conf"
 CONFIG_DIR_NAME = "GnuChanDock"
-CONFIG_FILE_NAME = "GnuChanDock.py"
+CONFIG_FILE_NAME = "GnuChanDock.conf"
 
 # Both pictures are this repository's own (assets/ beside this file), so a
 # standalone checkout builds and installs without anything outside it. logo.png
@@ -300,14 +300,18 @@ def install_config() -> None:
         )
 
     script = directory / CONFIG_FILE_NAME
+    legacy = directory / "GnuChanDock.py"
     if script.exists():
-        script.unlink()
-    shutil.copyfile(CONFIG_SOURCE, script)
-    try:
-        os.chown(script, uid, gid)
-    except OSError:
-        pass
-    detail(f"installed {script}")
+        detail(f"kept existing settings {script}")
+    elif legacy.exists():
+        detail(f"kept legacy settings {legacy}; the program reads it safely")
+    else:
+        shutil.copyfile(CONFIG_SOURCE, script)
+        try:
+            os.chown(script, uid, gid)
+        except OSError:
+            pass
+        detail(f"installed {script}")
 
     for source, name in ((LOGO_SOURCE, "logo.png"),
                          (SETTINGS_ICON_SOURCE, "settings.png")):

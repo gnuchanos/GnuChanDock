@@ -25,7 +25,7 @@ static void print_help(void) {
            gnuchan_lang_t("dock_usage_version"));
     printf("\n");
     printf("The settings are read from\n");
-    printf("  ~/.config/GnuChanDock/GnuChanDock.py\n");
+    printf("  ~/.config/GnuChanDock/GnuChanDock.conf\n");
     printf("and every value has a default, so the dock runs whether or not\n");
     printf("that file is there.\n");
 }

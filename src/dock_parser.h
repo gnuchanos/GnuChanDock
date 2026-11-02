@@ -1,11 +1,9 @@
 /*
- * dock_parser.h — enough of the Python grammar to read the settings script,
- * and nothing more.
+ * dock_parser.h — the small value grammar for settings files.
  *
- * The settings file is not a config format with Python in it; it is a Python
- * script, and the parts of the language it uses are the parts a person would
- * use to describe a dock: a call that passes named arguments, and lists of
- * names and calls.
+ * The current .conf format uses `Key = value` lines, including lists. The
+ * former static call syntax is also accepted for migration; nothing is
+ * interpreted as Python or executed.
  *
  *     gcl_Dock.Main(Background="#1a0b2e", IconSize=48)
  *
