@@ -90,6 +90,7 @@ static const DockIcon *item_icon(const DockCore *core, const DockItem *item) {
         return &core->terminal_icon;
     case DOCK_ITEM_WINDOW:
     case DOCK_ITEM_GROUP:
+    case DOCK_ITEM_PINNED:
         /* A group wears the icon of the first window gathered into it, which
            is the program's own icon: every window of a class is the same
            program, so one stands for them all. */

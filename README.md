@@ -26,6 +26,16 @@ exists; they are never executed.
 The running dock watches that settings directory, so changes saved through
 GnuChanSettings update its size, icons and colors without restarting it.
 
+Right-click a running application in the dock and choose **Pin to dock** to
+keep its launcher after its windows close. Pins are stored as desktop-entry IDs
+in `~/.config/GnuChanDock/PinnedApps.conf` (or the matching
+`$XDG_CONFIG_HOME` directory), independently of the appearance settings. The
+entry must be a visible `Type=Application` desktop entry with a valid `Name`
+and `Exec`; unavailable matches are explained in the context menu, and invalid
+saved entries are reported on stderr. Right-click a pinned item to unpin it.
+Clicking a pinned item launches its desktop entry when it has no open window,
+or raises its window when it is already running.
+
 The makefile takes an action as its first argument: `install` (the default),
 `build`, `run` and `uninstall`.
 

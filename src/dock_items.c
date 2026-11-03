@@ -19,6 +19,8 @@
 
 #include "dock_items.h"
 #include "dock_core.h"
+#include "dock_pins.h"
+#include "dock_theme.h"
 
 /* The class every GnuchanOS terminal carries, and the instance name it is
    started under. A window matching either is a terminal, however many are
@@ -274,7 +276,8 @@ static void group_window(DockCore *core, Window client, const char *wm_class,
     DockItem *found = NULL;
     for (int i = 0; i < core->item_count; i++) {
         DockItem *item = &core->items[i];
-        if ((item->kind == DOCK_ITEM_WINDOW || item->kind == DOCK_ITEM_GROUP) &&
+        if ((item->kind == DOCK_ITEM_WINDOW || item->kind == DOCK_ITEM_GROUP ||
+             item->kind == DOCK_ITEM_PINNED) &&
             wm_class[0] && strcasecmp(item->wm_class, wm_class) == 0) {
             found = item;
             break;
@@ -409,6 +412,7 @@ void dock_items_free_icons(DockCore *core) {
         dock_icon_cache[i].key[0] = '\0';
     }
     dock_icon_cache_count = 0;
+    dock_pins_free_icons(core);
 }
 
 void dock_items_build(DockCore *core) {
@@ -432,6 +436,39 @@ void dock_items_build(DockCore *core) {
                             core->config.terminal_command);
     }
 
+    for (int i = 0; i < core->pin_count; i++) {
+        DockPinnedApp *pin = &core->pins[i];
+        if (!pin->valid) {
+            continue;
+        }
+        DockItem *item = item_add(core, DOCK_ITEM_PINNED, pin->name, NULL);
+        if (!item) {
+            break;
+        }
+        snprintf(item->wm_class, sizeof(item->wm_class), "%s", pin->wm_class);
+        snprintf(item->desktop_id, sizeof(item->desktop_id), "%s",
+                 pin->desktop_id);
+        if (!pin->icon.ok) {
+            char icon_path[DOCK_TEXT_LENGTH * 2];
+            const char *source = pin->icon_name;
+            if (source[0] && source[0] != '/' && source[0] != '~') {
+                if (dock_theme_icon_for_class(pin->wm_class,
+                                              core->config.icon_size,
+                                              icon_path, sizeof(icon_path))) {
+                    source = icon_path;
+                } else {
+                    source = NULL;
+                }
+            }
+            if (source && source[0]) {
+                dock_icon_load_file(core->display, core->root, core->visual,
+                                    core->depth, &pin->icon, source,
+                                    core->config.icon_size, core->background);
+            }
+        }
+        item->icon = pin->icon;
+    }
+
     if (core->config.show_running) {
         items_add_windows(core, terminal, settings);
     }
@@ -452,6 +489,9 @@ int dock_item_is_category(const DockItem *item) {
        does exactly that. */
     if (item->kind == DOCK_ITEM_TERMINAL) {
         return item->window_count >= 1;
+    }
+    if (item->kind == DOCK_ITEM_PINNED) {
+        return item->window_count > 1;
     }
     return 0;
 }

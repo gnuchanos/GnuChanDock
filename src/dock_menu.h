@@ -48,6 +48,11 @@ typedef struct DockMenu {
     Window items[DOCK_MAX_ITEMS];
     int item_count;
     int hover_index;    /* the row under the pointer, or -1               */
+    int context_mode;
+    int context_enabled;
+    char context_label[DOCK_TEXT_LENGTH];
+    char context_class[DOCK_TEXT_LENGTH];
+    char context_desktop_id[DOCK_TEXT_LENGTH];
 } DockMenu;
 
 /* Open the list for `item`, above the dock and with its left edge at the
@@ -58,6 +63,9 @@ typedef struct DockMenu {
    holds nothing opens nothing. */
 void dock_menu_open(DockMenu *menu, DockCore *core, DockItem *item,
                     int owner_index, int slot_x);
+void dock_menu_open_context(DockMenu *menu, DockCore *core,
+                            const DockItem *item, int owner_index,
+                            int slot_x);
 
 /* Put the list away, if it is up. Safe to call when it is not. */
 void dock_menu_close(DockMenu *menu);

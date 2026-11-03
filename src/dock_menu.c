@@ -11,6 +11,7 @@
 #include "dock_core.h"
 #include "dock_items.h"
 #include "dock_menu.h"
+#include "dock_pins.h"
 #include "dock_shape.h"
 
 /* The gap between the dock's top edge and the list's bottom edge. */
@@ -140,9 +141,13 @@ static void menu_paint(DockMenu *menu) {
         }
 
         char title[DOCK_TEXT_LENGTH];
-        dock_window_title(core, menu->items[i], title, sizeof(title));
-        if (!title[0]) {
-            snprintf(title, sizeof(title), "window");
+        if (menu->context_mode) {
+            snprintf(title, sizeof(title), "%s", menu->context_label);
+        } else {
+            dock_window_title(core, menu->items[i], title, sizeof(title));
+            if (!title[0]) {
+                snprintf(title, sizeof(title), "window");
+            }
         }
 
         /* Whether this row is the window with the focus, read from the same
@@ -156,10 +161,15 @@ static void menu_paint(DockMenu *menu) {
            the compiler warn that a full-length title could be cut: the row is
            trimmed to the width below anyway, but the buffer still has to hold
            the untrimmed string first. */
-        int focused = (menu->items[i] == core->active_window);
+        int focused = !menu->context_mode &&
+                      menu->items[i] == core->active_window;
         char row[DOCK_MENU_ROW_LENGTH];
-        snprintf(row, sizeof(row), "%s (%s)", title,
-                 focused ? "focus" : "not focus");
+        if (menu->context_mode) {
+            snprintf(row, sizeof(row), "%s", title);
+        } else {
+            snprintf(row, sizeof(row), "%s (%s)", title,
+                     focused ? "focus" : "not focus");
+        }
 
         int max_title = menu->width - DOCK_MENU_PADDING * 2;
         fit_title(core, row, max_title, row, sizeof(row));
@@ -211,6 +221,11 @@ void dock_menu_close(DockMenu *menu) {
     menu->item_count = 0;
     menu->hover_index = -1;
     menu->owner_index = -1;
+    menu->context_mode = 0;
+    menu->context_enabled = 0;
+    menu->context_label[0] = '\0';
+    menu->context_class[0] = '\0';
+    menu->context_desktop_id[0] = '\0';
 }
 
 /* Whether the list is open and it was the slot at `index` that opened it. The
@@ -232,6 +247,7 @@ void dock_menu_open(DockMenu *menu, DockCore *core, DockItem *item,
     dock_menu_close(menu);
     menu->core = core;
     menu->owner_index = owner_index;
+    menu->context_mode = 0;
 
     int count = item->window_count;
     if (count > DOCK_MAX_ITEMS) {
@@ -310,6 +326,73 @@ void dock_menu_open(DockMenu *menu, DockCore *core, DockItem *item,
     menu_paint(menu);
 }
 
+void dock_menu_open_context(DockMenu *menu, DockCore *core,
+                            const DockItem *item, int owner_index,
+                            int slot_x) {
+    if (!menu || !core || !item) {
+        return;
+    }
+    dock_menu_close(menu);
+    menu->core = core;
+    menu->owner_index = owner_index;
+    menu->context_mode = 1;
+    snprintf(menu->context_class, sizeof(menu->context_class), "%s",
+             item->wm_class);
+    snprintf(menu->context_desktop_id, sizeof(menu->context_desktop_id), "%s",
+             item->desktop_id);
+    dock_pins_context_action(core, item, menu->context_label,
+                             sizeof(menu->context_label),
+                             &menu->context_enabled);
+    const char *titles[] = {menu->context_label};
+    menu->width = menu_width(core, titles, 1);
+    menu->height = DOCK_MENU_PADDING * 2 + row_height(core);
+
+    int screen_width = DisplayWidth(core->display, core->screen);
+    int screen_height = DisplayHeight(core->display, core->screen);
+    menu->x = slot_x;
+    if (menu->x + menu->width > screen_width) {
+        menu->x = screen_width - menu->width;
+    }
+    if (menu->x < 0) {
+        menu->x = 0;
+    }
+    menu->y = core->y - menu->height - DOCK_MENU_GAP;
+    if (menu->y < 0) {
+        menu->y = 0;
+    }
+    if (menu->y + menu->height > screen_height) {
+        menu->y = screen_height - menu->height;
+    }
+    menu->item_count = 1;
+    menu->hover_index = -1;
+    menu->items[0] = None;
+
+    XSetWindowAttributes attributes;
+    memset(&attributes, 0, sizeof(attributes));
+    attributes.override_redirect = True;
+    attributes.background_pixel = core->background;
+    attributes.event_mask = ExposureMask | ButtonPressMask | ButtonReleaseMask |
+                            PointerMotionMask | LeaveWindowMask | KeyPressMask;
+    menu->window = XCreateWindow(core->display, core->root, menu->x, menu->y,
+                                 (unsigned int)menu->width,
+                                 (unsigned int)menu->height, 0, core->depth,
+                                 InputOutput, core->visual,
+                                 CWOverrideRedirect | CWBackPixel | CWEventMask,
+                                 &attributes);
+    if (menu->window == None) {
+        menu->item_count = 0;
+        return;
+    }
+    dock_shape_round(core->display, menu->window, menu->width, menu->height,
+                     core->config.corner);
+    XRaiseWindow(core->display, menu->window);
+    XMapWindow(core->display, menu->window);
+    XSetInputFocus(core->display, menu->window, RevertToPointerRoot,
+                   CurrentTime);
+    XFlush(core->display);
+    menu_paint(menu);
+}
+
 /* Which row a y in the menu's own coordinates falls on, or -1. */
 static int row_at(const DockMenu *menu, int y) {
     int height = row_height(menu->core);
@@ -326,6 +409,29 @@ static int row_at(const DockMenu *menu, int y) {
         return -1;
     }
     return index;
+}
+
+static void context_menu_resize(DockMenu *menu) {
+    const char *titles[] = {menu->context_label};
+    int width = menu_width(menu->core, titles, 1);
+    if (width == menu->width) {
+        return;
+    }
+    int screen_width = DisplayWidth(menu->core->display, menu->core->screen);
+    int x = menu->x;
+    if (x + width > screen_width) {
+        x = screen_width - width;
+    }
+    if (x < 0) {
+        x = 0;
+    }
+    menu->x = x;
+    menu->width = width;
+    XMoveResizeWindow(menu->core->display, menu->window, x, menu->y,
+                      (unsigned int)menu->width,
+                      (unsigned int)menu->height);
+    dock_shape_round(menu->core->display, menu->window, menu->width,
+                     menu->height, menu->core->config.corner);
 }
 
 int dock_menu_event(DockMenu *menu, XEvent *event) {
@@ -356,18 +462,38 @@ int dock_menu_event(DockMenu *menu, XEvent *event) {
             menu_paint(menu);
         }
         return 1;
-    case ButtonPress:
+    case ButtonPress: {
+        int action_failed = 0;
         if (event->xbutton.button == Button1) {
             int index = row_at(menu, event->xbutton.y);
-            if (index >= 0) {
+            if (menu->context_mode && index == 0 &&
+                menu->context_enabled) {
+                char result[DOCK_TEXT_LENGTH];
+                if (dock_pins_action(menu->core, menu->context_class,
+                                     menu->context_desktop_id, result,
+                                     sizeof(result))) {
+                    dock_menu_close(menu);
+                    dock_core_refresh(menu->core);
+                } else {
+                    snprintf(menu->context_label,
+                             sizeof(menu->context_label), "%s", result);
+                    menu->context_enabled = 0;
+                    context_menu_resize(menu);
+                    menu_paint(menu);
+                    action_failed = 1;
+                }
+            } else if (!menu->context_mode && index >= 0) {
                 dock_core_activate(menu->core, menu->items[index]);
             }
         }
         /* Any click on the list puts it away, whether it chose a row or not:
            the list is a thing that is open while a question is being asked, and
            a click is an answer to it. */
-        dock_menu_close(menu);
+        if (!action_failed) {
+            dock_menu_close(menu);
+        }
         return 1;
+    }
     case KeyPress:
         /* Escape puts the list away, the way it dismisses a menu everywhere
            else. The list took the keyboard when it opened, so this key comes

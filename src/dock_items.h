@@ -10,6 +10,7 @@
  *   WINDOW    one open window nothing else shares — a single Firefox, say.
  *   GROUP     two or more open windows of the same program, gathered into one
  *             slot that wears the program's icon and a count of how many.
+ *   PINNED    a saved desktop application shortcut, whether it is open or not.
  *
  * The gathering is by WM_CLASS, the same name the icon lookup keys on: two
  * windows of one program are two of a kind, and a dock that showed them as two
@@ -36,6 +37,7 @@ typedef enum DockItemKind {
     DOCK_ITEM_TERMINAL,
     DOCK_ITEM_WINDOW,
     DOCK_ITEM_GROUP,
+    DOCK_ITEM_PINNED,
 } DockItemKind;
 
 typedef struct DockItem {
@@ -43,6 +45,7 @@ typedef struct DockItem {
     char label[DOCK_TEXT_LENGTH];
     char command[DOCK_TEXT_LENGTH];
     char wm_class[DOCK_TEXT_LENGTH];
+    char desktop_id[DOCK_TEXT_LENGTH];
     DockIcon icon;
 
     /* The windows this slot stands for. A singleton has one; a group has its

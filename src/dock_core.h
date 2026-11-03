@@ -10,6 +10,7 @@
 #include "dock_config.h"
 #include "dock_items.h"
 #include "dock_menu.h"
+#include "dock_pins.h"
 
 typedef struct DockCore {
     Display *display;
@@ -82,6 +83,8 @@ typedef struct DockCore {
 
     DockItem items[DOCK_MAX_ITEMS];
     int item_count;
+    DockPinnedApp pins[DOCK_MAX_PINNED];
+    int pin_count;
 
     DockIcon settings_icon;
     DockIcon terminal_icon;

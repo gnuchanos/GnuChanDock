@@ -19,6 +19,7 @@
 #include "dock_core.h"
 #include "dock_draw.h"
 #include "dock_menu.h"
+#include "dock_pins.h"
 #include "dock_shape.h"
 
 /* The size and place the dock window was last configured to. The window is
@@ -716,14 +717,27 @@ void dock_core_activate(DockCore *core, Window client) {
 }
 
 static void core_handle_click(DockCore *core, XButtonEvent *press) {
-    if (press->button != Button1) {
-        return;
-    }
     int index = dock_items_index_at(core, press->x, press->y);
     if (index < 0) {
         return;
     }
     DockItem *item = &core->items[index];
+
+    if (press->button == Button3) {
+        if (item->kind != DOCK_ITEM_WINDOW &&
+            item->kind != DOCK_ITEM_GROUP &&
+            item->kind != DOCK_ITEM_PINNED) {
+            return;
+        }
+        int pitch = core->layout_icon_size + core->layout_gap;
+        int row_left = core->layout_padding + core->layout_magnify / 2;
+        int screen_x = core->x + row_left + index * pitch;
+        dock_menu_open_context(&core->menu, core, item, index, screen_x);
+        return;
+    }
+    if (press->button != Button1) {
+        return;
+    }
 
     /* A category — two of a kind, or the terminal with a terminal open — holds
        more than one window, and a click on it opens the list of what it holds
@@ -773,6 +787,18 @@ static void core_handle_click(DockCore *core, XButtonEvent *press) {
         break;
     case DOCK_ITEM_WINDOW:
         dock_core_activate(core, item->windows[0]);
+        break;
+    case DOCK_ITEM_PINNED:
+        if (item->window_count > 0) {
+            dock_core_activate(core, item->windows[0]);
+        } else {
+            for (int i = 0; i < core->pin_count; i++) {
+                if (strcmp(core->pins[i].desktop_id, item->desktop_id) == 0) {
+                    dock_pins_launch(&core->pins[i]);
+                    break;
+                }
+            }
+        }
         break;
     default:
         /* A group that is somehow not a category: nothing to run. */
@@ -1053,6 +1079,7 @@ int dock_core_init(DockCore *core) {
         XInternAtom(core->display, "_NET_WM_STATE_FULLSCREEN", False);
 
     dock_config_load_default(&core->config);
+    dock_pins_load(core);
     core_config_watch_init(core);
     core_resolve_palette(core);
     core_open_font(core);
