@@ -32,7 +32,7 @@ BIN_DIR = Path("/usr/local/bin")
 APPS_DIR = Path("/usr/share/applications")
 DESKTOP_FILE = APPS_DIR / "gnuchandock.desktop"
 
-CONFIG_SOURCE = ROOT / "GnuChanDock_config" / "GnuChanDock.conf"
+CONFIG_SOURCE = ROOT / "config" / "config.conf"
 CONFIG_DIR_NAME = "GnuChanDock"
 CONFIG_FILE_NAME = "GnuChanDock.conf"
 
@@ -239,7 +239,7 @@ def desktop_entry() -> str:
     return "\n".join([
         "[Desktop Entry]",
         "Type=Application",
-        "Name=GnuChanDock",
+        "Name=GnuChan Dock",
         "Comment=GnuchanOS dock",
         f"Exec={BIN_DIR / PROGRAM}",
         f"TryExec={BIN_DIR / PROGRAM}",

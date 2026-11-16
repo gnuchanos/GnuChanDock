@@ -345,7 +345,7 @@ static void core_load_fixed_icons(DockCore *core) {
 }
 
 static void core_set_window_properties(DockCore *core) {
-    XStoreName(core->display, core->window, "GnuChanDock");
+    XStoreName(core->display, core->window, "GnuChan Dock");
 
     Atom type = core->net_wm_window_type_dock;
     XChangeProperty(core->display, core->window, core->net_wm_window_type,

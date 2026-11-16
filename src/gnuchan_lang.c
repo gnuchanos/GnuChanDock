@@ -178,7 +178,7 @@ struct tr_entry {
 
 static const struct tr_entry tr_table[] = {
     /* --- GnuChanSettings panel --- */
-    TR("settings_title", "GnuChanSettings", "GnuChanSettings"),
+    TR("settings_title", "GnuChan Settings", "GnuChan Ayarları"),
     TR("settings_subtitle", "Settings", "Ayarlar"),
     TR("settings_help",
        "The desktop's control panel: change the settings of the Gnuchan\n"

@@ -31,7 +31,7 @@ void dock_config_defaults(DockConfig *config) {
     config->magnify_reach = 2;
 
     snprintf(config->font, sizeof(config->font), "monospace:pixelsize=15");
-    config->label_enabled = 1;
+    config->label_enabled = 0;
 
     config->settings_enabled = 1;
     snprintf(config->settings_icon, sizeof(config->settings_icon),
